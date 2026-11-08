@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@theme {
+  --color-forest: #173F35;
+  --color-primary: #2F7655;
+  --color-fresh: #75A96B;
+  --color-cream: #F7F5EC;
+  --color-beige: #EAE5D8;
+  --color-charcoal: #202B27;
+  --color-muted: #77847D;
+  --color-amber: #D99B45;
+  --font-sans: "Inter", "Noto Sans Ethiopic", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Utility classes for brand */
+.bg-forest { background-color: var(--color-forest); }
+.bg-primary { background-color: var(--color-primary); }
+.bg-fresh { background-color: var(--color-fresh); }
+.bg-cream { background-color: var(--color-cream); }
+.bg-beige { background-color: var(--color-beige); }
+.text-forest { color: var(--color-forest); }
+.text-primary { color: var(--color-primary); }
+.text-muted { color: var(--color-muted); }
+.text-amber { color: var(--color-amber); }
+.border-primary { border-color: var(--color-primary); }
