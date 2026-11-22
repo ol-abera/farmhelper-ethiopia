@@ -1,0 +1,6 @@
+services:
+  ai:
+    ports: []
+  web:
+    ports:
+      - "80:80"

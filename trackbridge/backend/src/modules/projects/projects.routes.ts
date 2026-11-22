@@ -1,0 +1,21 @@
+import { Router } from 'express';
+import { authenticate } from '../../middleware/authenticate.js';
+import { authorize } from '../../middleware/authorize.js';
+import { validate } from '../../middleware/validate.js';
+import { asyncHandler } from '../../middleware/errorHandler.js';
+import { milestoneSchema, projectSchema, taskSchema } from './projects.schema.js';
+import * as c from './projects.controller.js';
+
+export const projectsRouter = Router();
+projectsRouter.use(authenticate);
+projectsRouter.get('/', asyncHandler(c.list));
+projectsRouter.get('/mine', asyncHandler(c.mine));
+projectsRouter.post('/', authorize('student'), validate({ body: projectSchema }), asyncHandler(c.create));
+projectsRouter.get('/:id/similarity', asyncHandler(c.similarity));
+projectsRouter.post('/:id/title', authorize('student'), asyncHandler(c.submitTitle));
+projectsRouter.post('/:id/review-title', authorize('advisor', 'coordinator', 'administrator'), asyncHandler(c.reviewTitle));
+projectsRouter.post('/:id/tasks', validate({ body: taskSchema }), asyncHandler(c.addTask));
+projectsRouter.patch('/tasks/:taskId', asyncHandler(c.patchTask));
+projectsRouter.post('/:id/milestones', validate({ body: milestoneSchema }), asyncHandler(c.addMilestone));
+projectsRouter.post('/milestones/:mid/submit', asyncHandler(c.submitMilestone));
+projectsRouter.post('/milestones/:mid/review', authorize('advisor', 'coordinator', 'administrator'), asyncHandler(c.reviewMilestone));
