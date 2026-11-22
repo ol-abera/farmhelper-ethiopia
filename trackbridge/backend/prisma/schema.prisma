@@ -1,0 +1,777 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  advisor
+  internship_supervisor
+  coordinator
+  host_organization
+  administrator
+}
+
+enum ApplicationType {
+  apply
+  propose
+}
+
+enum ApplicationStatus {
+  pending
+  recommended
+  approved
+  rejected
+  withdrawn
+}
+
+enum PlacementStatus {
+  applied
+  proposed
+  approved
+  placed
+  withdrawn
+  completed
+  cancelled
+}
+
+enum SupervisorType {
+  advisor
+  internship
+}
+
+enum LogbookStatus {
+  missing
+  draft
+  submitted
+  late
+  returned
+  approved
+}
+
+enum CommentAction {
+  comment
+  approve
+  return_to_student
+}
+
+enum ProjectMode {
+  individual
+  team
+}
+
+enum ProposalStatus {
+  draft
+  submitted
+  approved
+  returned
+}
+
+enum OverallStatus {
+  not_started
+  in_progress
+  behind
+  on_track
+  completed
+}
+
+enum TeamRole {
+  owner
+  member
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+}
+
+enum MilestoneStatus {
+  pending
+  submitted
+  accepted
+  returned
+}
+
+enum RubricComponent {
+  advisor
+  host
+  project
+}
+
+enum EvaluationStatus {
+  draft
+  submitted
+}
+
+enum DocumentType {
+  cv
+  logbook_attachment
+  deliverable
+  placement_letter
+  progress_report
+  final_report
+  cycle_summary
+  cbtp_report
+  cbtp_plan
+  cbtp_other
+}
+
+enum ReminderChannel {
+  email
+  in_app
+}
+
+enum CbtpActivityStatus {
+  planned
+  active
+  completed
+  cancelled
+}
+
+enum CbtpDocStatus {
+  draft
+  submitted
+  returned
+  approved
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
+
+model User {
+  id                     String    @id @default(cuid())
+  fullName               String
+  email                  String    @unique
+  passwordHash           String
+  role                   Role
+  studentId              String?   @unique
+  phone                  String?
+  department             String?
+  skills                 String?
+  interests              String?
+  bio                    String?
+  isActive               Boolean   @default(true)
+  approvedAt             DateTime?
+  organizationId         String?
+  cycleId                String?
+  emailRemindersEnabled  Boolean   @default(true)
+  coordinatorFlagAtRisk  Boolean   @default(false)
+  lastActivityAt         DateTime  @default(now())
+  passwordResetTokenHash String?
+  passwordResetExpiresAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  organization           Organization? @relation(fields: [organizationId], references: [id])
+  cycle                  Cycle?        @relation(fields: [cycleId], references: [id])
+
+  refreshTokens          RefreshToken[]
+  applications           Application[]
+  placements             Placement[]
+  supervisorAssignments  SupervisorAssignment[]
+  logbookComments        LogbookComment[]
+  ownedProjects          Project[]           @relation("ProjectCreator")
+  projectMemberships     ProjectMember[]
+  assignedTasks          ProjectTask[]
+  deliverables           Deliverable[]
+  evaluationsGiven       Evaluation[]        @relation("Evaluator")
+  evaluationsReceived    Evaluation[]        @relation("Evaluatee")
+  finalScores            FinalScore[]
+  messages               Message[]
+  announcements          Announcement[]
+  notifications          Notification[]
+  reminderLogs           ReminderLog[]
+  documents              Document[]
+  auditEvents            AuditEvent[]
+  threadsParticipating   MessageThreadParticipant[]
+  advisedGroups          CbtpGroup[]
+  cbtpMemberships        CbtpGroupMember[]
+  cbtpDocuments          CbtpDocument[]      @relation("CbtpDocAuthor")
+  cbtpReviews            CbtpDocument[]      @relation("CbtpDocReviewer")
+  attendanceRecords      Attendance[]
+  earlyWarnings          EarlyWarning[]
+  internshipTasksAssigned InternshipTask[] @relation("TaskAssignee")
+  internshipTasksCreated  InternshipTask[] @relation("TaskCreator")
+  chatbotLogs            ChatbotLog[]
+  titleHits              TitleSimilarityHit[]
+  aiSummaries            AiSummary[]
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  userId      String
+  hashedToken String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Cycle {
+  id                 String    @id @default(cuid())
+  title              String
+  startDate          DateTime
+  endDate            DateTime
+  internshipStart    DateTime
+  internshipEnd      DateTime
+  logbookDueWeekday  Int       @default(0)
+  timezone           String    @default("Africa/Addis_Ababa")
+  evaluationOpenAt   DateTime?
+  evaluationCloseAt  DateTime?
+  evaluationsLocked  Boolean   @default(false)
+  scoresPublished    Boolean   @default(false)
+  isOpen             Boolean   @default(true)
+  isArchived         Boolean   @default(false)
+  config             Json
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  users              User[]
+  applications       Application[]
+  placements         Placement[]
+  projects           Project[]
+  rubrics            Rubric[]
+  evaluations        Evaluation[]
+  finalScores        FinalScore[]
+  threads            MessageThread[]
+  announcements      Announcement[]
+  cbtpActivities     CbtpActivity[]
+}
+
+model Organization {
+  id           String    @id @default(cuid())
+  name         String
+  sector       String
+  address      String
+  city         String
+  contactName  String
+  contactEmail String
+  contactPhone String
+  description  String?
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  users        User[]
+  positions    Position[]
+  placements   Placement[]
+}
+
+model Position {
+  id              String        @id @default(cuid())
+  organizationId  String
+  title           String
+  description     String
+  requiredSkills  String?
+  quota           Int           @default(1)
+  notes           String?
+  isOpen          Boolean       @default(true)
+  openFrom        DateTime?
+  openTo          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+  applications    Application[]
+  placements      Placement[]
+}
+
+model Application {
+  id                 String            @id @default(cuid())
+  studentId          String
+  positionId         String?
+  cycleId            String
+  type               ApplicationType
+  coverNote          String
+  cvFileId           String?
+  proposedOrgName    String?
+  proposedOrgAddress String?
+  proposedOrgContact String?
+  proposedRole       String?
+  status             ApplicationStatus @default(pending)
+  reviewerId         String?
+  reason             String?
+  hostRecommendation String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  student            User              @relation(fields: [studentId], references: [id])
+  position           Position?         @relation(fields: [positionId], references: [id])
+  cycle              Cycle             @relation(fields: [cycleId], references: [id])
+
+  @@index([studentId, cycleId])
+}
+
+model Placement {
+  id               String          @id @default(cuid())
+  studentId        String
+  cycleId          String
+  organizationId   String
+  positionId       String?
+  startDate        DateTime
+  endDate          DateTime
+  status           PlacementStatus @default(placed)
+  letterDocumentId String?
+  cancelReason     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  student          User            @relation(fields: [studentId], references: [id])
+  cycle            Cycle           @relation(fields: [cycleId], references: [id])
+  organization     Organization    @relation(fields: [organizationId], references: [id])
+  position         Position?       @relation(fields: [positionId], references: [id])
+  assignments      SupervisorAssignment[]
+  logbookWeeks     LogbookWeek[]
+  threads          MessageThread[]
+  attendance       Attendance[]
+  internshipTasks  InternshipTask[]
+
+  @@unique([studentId, cycleId])
+  @@index([cycleId, status])
+}
+
+model SupervisorAssignment {
+  id               String         @id @default(cuid())
+  placementId      String
+  supervisorUserId String
+  type             SupervisorType
+  assignedAt       DateTime       @default(now())
+  assignedBy       String
+  endedAt          DateTime?
+
+  placement        Placement      @relation(fields: [placementId], references: [id])
+  supervisor       User           @relation(fields: [supervisorUserId], references: [id])
+
+  @@index([supervisorUserId, type])
+  @@index([placementId, type])
+}
+
+model LogbookWeek {
+  id          String         @id @default(cuid())
+  placementId String
+  weekIndex   Int
+  periodStart DateTime
+  periodEnd   DateTime
+  dueAt       DateTime
+  placement   Placement      @relation(fields: [placementId], references: [id])
+  entry       LogbookEntry?
+
+  @@unique([placementId, weekIndex])
+}
+
+model LogbookEntry {
+  id            String           @id @default(cuid())
+  weekId        String           @unique
+  activities    String
+  hours         Float
+  skills        String
+  challenges    String
+  status        LogbookStatus    @default(draft)
+  submittedAt   DateTime?
+  late          Boolean          @default(false)
+  resubmitCount Int              @default(0)
+  attachmentId  String?
+  week          LogbookWeek      @relation(fields: [weekId], references: [id])
+  comments      LogbookComment[]
+}
+
+model LogbookComment {
+  id        String        @id @default(cuid())
+  entryId   String
+  authorId  String
+  body      String
+  action    CommentAction
+  createdAt DateTime      @default(now())
+  entry     LogbookEntry  @relation(fields: [entryId], references: [id])
+  author    User          @relation(fields: [authorId], references: [id])
+}
+
+model Attendance {
+  id          String            @id @default(cuid())
+  placementId String
+  date        DateTime
+  status      AttendanceStatus
+  hours       Float             @default(8)
+  notes       String?
+  recordedBy  String
+  createdAt   DateTime          @default(now())
+  placement   Placement         @relation(fields: [placementId], references: [id])
+  recorder    User              @relation(fields: [recordedBy], references: [id])
+
+  @@unique([placementId, date])
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  cycleId        String
+  creatorId      String
+  title          String
+  problem        String
+  objectives     String
+  tools          String
+  mode           ProjectMode    @default(individual)
+  proposalStatus ProposalStatus @default(draft)
+  overallStatus  OverallStatus  @default(not_started)
+  proposalFileId String?
+  frozen         Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  cycle          Cycle          @relation(fields: [cycleId], references: [id])
+  creator        User           @relation("ProjectCreator", fields: [creatorId], references: [id])
+  members        ProjectMember[]
+  tasks          ProjectTask[]
+  milestones     Milestone[]
+  threads        MessageThread[]
+  similarityHits TitleSimilarityHit[]
+}
+
+model ProjectMember {
+  id         String    @id @default(cuid())
+  projectId  String
+  userId     String
+  roleInTeam TeamRole
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+  project    Project   @relation(fields: [projectId], references: [id])
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+}
+
+model ProjectTask {
+  id         String     @id @default(cuid())
+  projectId  String
+  title      String
+  assigneeId String?
+  dueAt      DateTime?
+  status     TaskStatus @default(todo)
+  project    Project    @relation(fields: [projectId], references: [id])
+  assignee   User?      @relation(fields: [assigneeId], references: [id])
+}
+
+model Milestone {
+  id            String           @id @default(cuid())
+  projectId     String
+  title         String
+  description   String
+  dueAt         DateTime
+  status        MilestoneStatus  @default(pending)
+  reviewComment String?
+  project       Project          @relation(fields: [projectId], references: [id])
+  deliverables  Deliverable[]
+}
+
+model Deliverable {
+  id          String    @id @default(cuid())
+  milestoneId String
+  fileId      String
+  version     Int       @default(1)
+  uploadedBy  String
+  uploadedAt  DateTime  @default(now())
+  milestone   Milestone @relation(fields: [milestoneId], references: [id])
+  uploader    User      @relation(fields: [uploadedBy], references: [id])
+}
+
+model Rubric {
+  id        String          @id @default(cuid())
+  cycleId   String
+  component RubricComponent
+  criteria  Json
+  cycle     Cycle           @relation(fields: [cycleId], references: [id])
+
+  @@unique([cycleId, component])
+}
+
+model Evaluation {
+  id          String           @id @default(cuid())
+  studentId   String
+  cycleId     String
+  component   RubricComponent
+  evaluatorId String
+  scores      Json
+  total       Float?
+  comments    String?
+  status      EvaluationStatus @default(draft)
+  submittedAt DateTime?
+  student     User             @relation("Evaluatee", fields: [studentId], references: [id])
+  evaluator   User             @relation("Evaluator", fields: [evaluatorId], references: [id])
+  cycle       Cycle            @relation(fields: [cycleId], references: [id])
+
+  @@unique([studentId, cycleId, component, evaluatorId])
+}
+
+model FinalScore {
+  studentId       String
+  cycleId         String
+  advisorTotal    Float?
+  hostTotal       Float?
+  projectTotal    Float?
+  weightedFinal   Float?
+  publishedAt     DateTime?
+  student         User      @relation(fields: [studentId], references: [id])
+  cycle           Cycle     @relation(fields: [cycleId], references: [id])
+
+  @@id([studentId, cycleId])
+}
+
+model MessageThread {
+  id           String   @id @default(cuid())
+  placementId  String?
+  projectId    String?
+  cycleId      String
+  subject      String
+  createdAt    DateTime @default(now())
+  placement    Placement? @relation(fields: [placementId], references: [id])
+  project      Project?   @relation(fields: [projectId], references: [id])
+  cycle        Cycle      @relation(fields: [cycleId], references: [id])
+  messages     Message[]
+  participants MessageThreadParticipant[]
+}
+
+model MessageThreadParticipant {
+  threadId   String
+  userId     String
+  lastReadAt DateTime?
+  thread     MessageThread @relation(fields: [threadId], references: [id])
+  user       User          @relation(fields: [userId], references: [id])
+
+  @@id([threadId, userId])
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  threadId  String
+  senderId  String
+  body      String
+  createdAt DateTime      @default(now())
+  thread    MessageThread @relation(fields: [threadId], references: [id])
+  sender    User          @relation(fields: [senderId], references: [id])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  cycleId   String
+  authorId  String
+  audience  String
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+  cycle     Cycle    @relation(fields: [cycleId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String
+  payload   Json?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+}
+
+model ReminderLog {
+  id          String          @id @default(cuid())
+  reminderKey String
+  userId      String
+  channel     ReminderChannel
+  sentAt      DateTime        @default(now())
+  success     Boolean         @default(true)
+  user        User            @relation(fields: [userId], references: [id])
+
+  @@unique([reminderKey, userId, channel])
+  @@index([sentAt])
+}
+
+model Document {
+  id           String       @id @default(cuid())
+  type         DocumentType
+  storagePath  String
+  originalName String
+  mime         String
+  size         Int
+  uploadedBy   String
+  sha256       String?
+  createdAt    DateTime     @default(now())
+  uploader     User         @relation(fields: [uploadedBy], references: [id])
+}
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model CbtpSite {
+  id          String         @id @default(cuid())
+  name        String
+  woreda      String
+  kebele      String?
+  community   String
+  address     String
+  contactName String
+  contactPhone String
+  description String?
+  archivedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  activities  CbtpActivity[]
+}
+
+model CbtpActivity {
+  id          String             @id @default(cuid())
+  siteId      String
+  cycleId     String
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  status      CbtpActivityStatus @default(planned)
+  createdAt   DateTime           @default(now())
+  site        CbtpSite           @relation(fields: [siteId], references: [id])
+  cycle       Cycle              @relation(fields: [cycleId], references: [id])
+  groups      CbtpGroup[]
+}
+
+model CbtpGroup {
+  id         String            @id @default(cuid())
+  activityId String
+  name       String
+  advisorId  String?
+  createdAt  DateTime          @default(now())
+  activity   CbtpActivity      @relation(fields: [activityId], references: [id])
+  advisor    User?             @relation(fields: [advisorId], references: [id])
+  members    CbtpGroupMember[]
+  documents  CbtpDocument[]
+}
+
+model CbtpGroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  studentId String
+  assignedAt DateTime @default(now())
+  group     CbtpGroup @relation(fields: [groupId], references: [id])
+  student   User      @relation(fields: [studentId], references: [id])
+
+  @@unique([groupId, studentId])
+}
+
+model CbtpDocument {
+  id           String        @id @default(cuid())
+  groupId      String
+  authorId     String
+  title        String
+  body         String
+  docKind      String
+  status       CbtpDocStatus @default(draft)
+  fileId       String?
+  reviewComment String?
+  reviewerId   String?
+  submittedAt  DateTime?
+  reviewedAt   DateTime?
+  summary      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  group        CbtpGroup     @relation(fields: [groupId], references: [id])
+  author       User          @relation("CbtpDocAuthor", fields: [authorId], references: [id])
+  reviewer     User?         @relation("CbtpDocReviewer", fields: [reviewerId], references: [id])
+}
+
+model FaqEntry {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  tags      String
+  audience  String   @default("all")
+  approved  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model EarlyWarning {
+  id         String    @id @default(cuid())
+  studentId  String
+  type       String
+  message    String
+  reasons    Json
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+  student    User      @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, resolvedAt])
+}
+
+model SystemConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model InternshipTask {
+  id          String     @id @default(cuid())
+  placementId String
+  title       String
+  dueAt       DateTime?
+  status      TaskStatus @default(todo)
+  assigneeId  String
+  createdById String
+  createdAt   DateTime   @default(now())
+  placement   Placement  @relation(fields: [placementId], references: [id])
+  assignee    User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy   User       @relation("TaskCreator", fields: [createdById], references: [id])
+}
+
+model TitleSimilarityHit {
+  id           String   @id @default(cuid())
+  projectId    String
+  otherTitle   String
+  otherProjectId String?
+  score        Float
+  advisory     String
+  createdAt    DateTime @default(now())
+  project      Project  @relation(fields: [projectId], references: [id])
+}
+
+model ChatbotLog {
+  id         String   @id @default(cuid())
+  userId     String
+  query      String
+  matchedId  String?
+  score      Float?
+  fallback   Boolean
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model AiSummary {
+  id         String   @id @default(cuid())
+  userId     String
+  sourceType String
+  sourceId   String
+  summary    String
+  algorithm  String   @default("textrank")
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}

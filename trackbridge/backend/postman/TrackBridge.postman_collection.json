@@ -1,0 +1,20 @@
+{
+  "info": { "name": "TrackBridge", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [{ "key": "base", "value": "http://localhost:3000/api/v1" }],
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{base}}/../health" } },
+    {
+      "name": "Login student",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\"email\":\"student@trackbridge.demo\",\"password\":\"TrackBridge!2026\"}" },
+        "url": "{{base}}/auth/login"
+      }
+    },
+    { "name": "AI FAQ", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }], "body": { "mode": "raw", "raw": "{\"question\":\"What is CBTP?\"}" }, "url": "{{base}}/ai/faq" } },
+    { "name": "CBTP sites", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{base}}/cbtp/sites" } },
+    { "name": "Opportunities", "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }], "url": "{{base}}/opportunities" } },
+    { "name": "Title similarity", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{token}}" }], "body": { "mode": "raw", "raw": "{\"title\":\"Hospital appointment web system\"}" }, "url": "{{base}}/ai/title-similarity" } }
+  ]
+}

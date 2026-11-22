@@ -27,3 +27,10 @@ dist/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# TrackBridge (this branch only)
+trackbridge/backend/.env
+trackbridge/node_modules
+trackbridge/**/node_modules
+trackbridge/**/dist
+trackbridge/**/__pycache__

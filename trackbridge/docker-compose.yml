@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-trackbridge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackbridge}
+      POSTGRES_DB: ${POSTGRES_DB:-trackbridge}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trackbridge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ai:
+    build: ./ai-service
+    environment:
+      TZ: Africa/Addis_Ababa
+    ports:
+      - "${AI_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      ai:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-trackbridge}:${POSTGRES_PASSWORD:-trackbridge}@db:5432/${POSTGRES_DB:-trackbridge}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-access}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      APP_URL: http://localhost:${WEB_PORT:-5173}
+      AI_SERVICE_URL: http://ai:8000
+      TZ: Africa/Addis_Ababa
+      SEED_PASSWORD: ${SEED_PASSWORD:-TrackBridge!2026}
+      UPLOAD_DIR: /app/backend/uploads
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - uploads:/app/backend/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-5173}:80"
+
+volumes:
+  pgdata:
+  uploads:

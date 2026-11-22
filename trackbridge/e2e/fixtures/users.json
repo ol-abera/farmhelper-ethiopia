@@ -1,0 +1,11 @@
+{
+  "password": "TrackBridge!2026",
+  "users": [
+    { "role": "administrator", "email": "admin@trackbridge.demo" },
+    { "role": "coordinator", "email": "coordinator@trackbridge.demo" },
+    { "role": "advisor", "email": "advisor@trackbridge.demo" },
+    { "role": "internship_supervisor", "email": "supervisor@trackbridge.demo" },
+    { "role": "host_organization", "email": "host@trackbridge.demo" },
+    { "role": "student", "email": "student@trackbridge.demo" }
+  ]
+}

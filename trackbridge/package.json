@@ -1,0 +1,29 @@
+{
+  "name": "trackbridge",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TrackBridge — AI-Driven Integrated Web Platform for CBTP Tracking, Internship Coordination, and Technical Project Management",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,ai,web -c teal,yellow,cyan \"npm run dev -w backend\" \"bash -lc 'cd ai-service && python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000'\" \"npm run dev -w frontend\"",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm test --workspaces --if-present",
+    "build": "npm run build -w shared && npm run build -w backend && npm run build -w frontend",
+    "prisma:generate": "npm run prisma:generate -w backend",
+    "prisma:migrate": "npm run prisma:migrate -w backend",
+    "prisma:seed": "npm run prisma:seed -w backend",
+    "db:reset": "bash scripts/reset-dev.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

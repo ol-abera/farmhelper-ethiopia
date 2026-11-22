@@ -1,0 +1,9 @@
+name: Feature
+description: Propose a TrackBridge change
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Request
+    validations:
+      required: true
